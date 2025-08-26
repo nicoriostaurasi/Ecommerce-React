@@ -1,39 +1,82 @@
-import React from 'react';
-
-
-const mockProducts = [
-  { id: 1, name: 'Producto 1', price: '$8.000' },
-  { id: 2, name: 'Producto 2', price: '$10.000' },
-  { id: 3, name: 'Producto 3', price: '$12.000' },
-  { id: 4, name: 'Producto 4', price: '$15.000' },
-  { id: 5, name: 'Producto 5', price: '$20.000' },
-  { id: 6, name: 'Producto 6', price: '$25.000' },
-  { id: 7, name: 'Producto 7', price: '$30.000' },
-  { id: 8, name: 'Producto 8', price: '$35.000' },
-  { id: 9, name: 'Producto 9', price: '$40.000' },
-  { id: 10, name: 'Producto 10', price: '$45.000' },
-];
+import React, { useState, useEffect } from 'react';
+import { useParams } from 'react-router-dom';
+import ItemList from './ItemList';
+import { getProducts, categories } from '../data/products';
 
 const ItemListContainer = ({ greeting }) => {
-  return (
-    <section className="bg-dark text-light p-4">
-      <h2>{greeting}</h2>
-      <div className="mt-4">
-        {mockProducts.map((product) => (
-          <div
-            key={product.id}
-            style={{
-              backgroundColor: '#212529',
-              border: '1px solid #444',
-              borderRadius: '8px',
-              padding: '1rem',
-              marginBottom: '1rem',
-            }}
-          >
-            <h4>{product.name}</h4>
-            <p>Precio: {product.price}</p>
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const { categoryId } = useParams();
+
+  useEffect(() => {
+    setLoading(true);
+    setError(null);
+    
+    getProducts(categoryId)
+      .then(productsData => {
+        setProducts(productsData);
+        setLoading(false);
+      })
+      .catch(err => {
+        setError(err.message);
+        setLoading(false);
+      });
+  }, [categoryId]);
+
+  const getCategoryName = () => {
+    if (!categoryId) return 'Todos los Productos';
+    const category = categories.find(cat => cat.id === categoryId);
+    return category ? category.name : 'Categoría';
+  };
+
+  if (loading) {
+    return (
+      <section className="bg-dark text-light p-4 min-vh-100">
+        <div className="container">
+          <div className="text-center mt-5">
+            <div className="spinner-border text-light mb-3" role="status">
+              <span className="visually-hidden">Cargando...</span>
+            </div>
+            <p>Cargando productos...</p>
           </div>
-        ))}
+        </div>
+      </section>
+    );
+  }
+
+  if (error) {
+    return (
+      <section className="bg-dark text-light p-4 min-vh-100">
+        <div className="container">
+          <div className="text-center mt-5">
+            <h2 className="text-danger mb-3">Error</h2>
+            <p>{error}</p>
+          </div>
+        </div>
+      </section>
+    );
+  }
+
+  return (
+    <section className="bg-dark text-light p-4 min-vh-100">
+      <div className="container">
+        <div className="text-center mb-5">
+          <h2>{greeting}</h2>
+          <h3 className="text-dark mt-3">{getCategoryName()}</h3>
+          {products.length > 0 && (
+            <p className="text-muted">Mostrando {products.length} productos</p>
+          )}
+        </div>
+        
+        {products.length === 0 ? (
+          <div className="text-center mt-5">
+            <h4>No hay productos disponibles en esta categoría</h4>
+            <p className="text-muted">Intenta con otra categoría</p>
+          </div>
+        ) : (
+          <ItemList products={products} />
+        )}
       </div>
     </section>
   );
